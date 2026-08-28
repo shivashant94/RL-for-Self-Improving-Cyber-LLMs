@@ -1,0 +1,15 @@
+# Environments
+venv/
+env/
+.env
+
+# PyTorch Checkpoints
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
