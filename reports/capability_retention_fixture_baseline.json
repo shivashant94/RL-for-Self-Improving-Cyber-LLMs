@@ -1,0 +1,86 @@
+{
+  "checkpoint_id": "fixture_baseline",
+  "generated_at": "2026-08-28T08:05:43.043422+00:00",
+  "total_probes": 8,
+  "passed": 8,
+  "failed": 0,
+  "retention_score": 1.0,
+  "threshold": 1.0,
+  "regression_flagged": false,
+  "per_category_pass_rate": {
+    "incident_summary": 1.0,
+    "security_vocabulary": 1.0,
+    "ioc_extraction": 1.0,
+    "tool_use": 1.0,
+    "log_analysis": 1.0,
+    "policy_explanation": 1.0
+  },
+  "per_probe": [
+    {
+      "probe_id": "cap_01",
+      "probe_category": "incident_summary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_02",
+      "probe_category": "security_vocabulary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_03",
+      "probe_category": "ioc_extraction",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_04",
+      "probe_category": "tool_use",
+      "expected_status": "tool_used",
+      "actual_status": "tool_used",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_05",
+      "probe_category": "security_vocabulary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_06",
+      "probe_category": "log_analysis",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_07",
+      "probe_category": "tool_use",
+      "expected_status": "tool_used",
+      "actual_status": "tool_used",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_08",
+      "probe_category": "policy_explanation",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    }
+  ],
+  "scope": "capability-retention probe; fixture baseline only",
+  "disclaimer": "Fixture-based capability probing only. Scores reflect rule-based baseline behaviour; replace FixtureModelAdapter with SFTModelAdapter once base model is confirmed."
+}

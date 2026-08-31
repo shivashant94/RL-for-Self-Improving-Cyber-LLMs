@@ -1,0 +1,163 @@
+{
+  "report_id": "review3_readiness_summary_v1",
+  "generated_at": "2026-08-28T08:06:00Z",
+  "phase": "review3",
+  "scope": "Fixture-based readiness summary. All metrics from deterministic rule-based baselines. SFT and MAPPO training BLOCKED_EXTERNAL. This document will be updated with trained-model results once the base model and training stack are confirmed.",
+  "disclaimer": "Do not present fixture baseline metrics as trained-LLM or production-security results.",
+
+  "overall_status": {
+    "review1": "COMPLETE",
+    "review2_fixture": "COMPLETE",
+    "review3_fixture_infra": "COMPLETE",
+    "sft_training": "BLOCKED_EXTERNAL",
+    "mappo_training": "BLOCKED_EXTERNAL",
+    "review3_trained_eval": "BLOCKED — awaiting SFT+MAPPO training and Member 1/3/4 schemas"
+  },
+
+  "test_suite": {
+    "total_tests": 284,
+    "passing": 284,
+    "failing": 0,
+    "verification_command": "python3 -m unittest discover -s tests -v",
+    "last_run": "2026-08-28"
+  },
+
+  "deliverables": {
+    "gate": {
+      "file": "src/defender_policy/gate.py",
+      "rules": ["GATE-001","GATE-002","GATE-003","GATE-004","GATE-005","GATE-006","GATE-007","GATE-008","GATE-009"],
+      "status": "READY",
+      "note": "Gate is fixed during all training and evaluation. Cannot be disabled for any ablation."
+    },
+    "sft_corpus": {
+      "train": "data/sft/train.jsonl (20 examples)",
+      "validation": "data/sft/validation.jsonl (8 examples)",
+      "heldout": "data/sft/heldout.jsonl (10 examples — FROZEN)",
+      "status": "READY — training BLOCKED_EXTERNAL"
+    },
+    "evaluation_cases": {
+      "in_distribution": "data/evaluation/review1_cases.jsonl (14 cases)",
+      "heldout_ood": "data/evaluation/heldout_cases.jsonl (10 cases — FROZEN, allow_heldout=True required)",
+      "status": "READY"
+    },
+    "model_adapter": {
+      "file": "src/defender_policy/model_adapter.py",
+      "classes": ["BaseModelAdapter", "FixtureModelAdapter", "SFTModelAdapter (stub)"],
+      "status": "READY — swap FixtureModelAdapter for SFTModelAdapter(checkpoint_path=...) once base model confirmed"
+    },
+    "rollout_adapter": {
+      "file": "src/defender_policy/rollout_adapter.py",
+      "status": "READY"
+    },
+    "rewards": {
+      "file": "src/defender_policy/rewards.py",
+      "status": "READY"
+    },
+    "mappo_defender": {
+      "file": "src/defender_policy/mappo_defender.py",
+      "status": "READY — pure Python, framework-agnostic. Connect to training loop once base model confirmed."
+    },
+    "capability_retention": {
+      "file": "src/defender_policy/capability_retention.py",
+      "probes": 8,
+      "baseline_score": 1.0,
+      "status": "READY"
+    },
+    "episode_harness": {
+      "file": "src/defender_policy/episode_harness.py",
+      "script": "scripts/run_review2_episode.py",
+      "status": "READY — single-turn v1; extend to multi-turn for Review 3"
+    },
+    "checkpoint_evaluator": {
+      "file": "src/defender_policy/evaluate_checkpoint.py",
+      "script": "scripts/evaluate_checkpoint.py",
+      "heldout_guard": "allow_heldout=False by default",
+      "status": "READY"
+    },
+    "ablation_configs": {
+      "no_kl": "configs/ablation_configs/ablation_no_kl.json (beta_kl=0.0)",
+      "high_kl": "configs/ablation_configs/ablation_high_kl.json (beta_kl=1.0)",
+      "no_gate": "configs/ablation_configs/ablation_no_gate.json (NOT_RUN — gate cannot be disabled)",
+      "status": "READY for execution once training is unblocked"
+    },
+    "retention_analysis_script": {
+      "script": "scripts/run_capability_retention_analysis.py",
+      "outputs": ["reports/capability_retention_<checkpoint>.json", "reports/capability_retention_<checkpoint>.csv"],
+      "status": "READY"
+    },
+    "reports_generated": [
+      "reports/review1_baseline_metrics.json",
+      "reports/sft_warmup_manifest.json",
+      "reports/review1_traces.json",
+      "reports/review2_episode_report.json",
+      "reports/review2_integration_summary.json",
+      "reports/checkpoint_eval_fixture_baseline.json",
+      "reports/capability_retention_fixture_baseline.json",
+      "reports/capability_retention_fixture_baseline.csv"
+    ]
+  },
+
+  "fixture_baseline_metrics": {
+    "note": "All from ReviewOneBaselineDefender (rule-based). Not a trained-LLM result.",
+    "in_distribution": {
+      "n_cases": 14,
+      "attack_success_rate": 0.0,
+      "tool_block_rate": 1.0,
+      "avg_total_reward": 0.8571,
+      "per_family_asr": {
+        "direct_injection": 0.0,
+        "indirect_injection": 0.0,
+        "secret_extraction": 0.0,
+        "unauthorized_operation": 0.0,
+        "tool_confusion": 0.0
+      }
+    },
+    "heldout_ood": {
+      "n_cases": 10,
+      "attack_success_rate": 0.0,
+      "avg_total_reward": 0.9
+    },
+    "capability_retention": {
+      "total_probes": 8,
+      "retention_score": 1.0,
+      "regression_flagged": false
+    }
+  },
+
+  "ablation_plan": {
+    "no_kl": {
+      "config": "configs/ablation_configs/ablation_no_kl.json",
+      "beta_kl": 0.0,
+      "hypothesis": "KL removal causes capability drift → lower retention score",
+      "status": "BLOCKED_EXTERNAL — awaiting trained model"
+    },
+    "high_kl": {
+      "config": "configs/ablation_configs/ablation_high_kl.json",
+      "beta_kl": 1.0,
+      "hypothesis": "Strong KL preserves capability but may limit adversarial robustness gains",
+      "status": "BLOCKED_EXTERNAL — awaiting trained model"
+    },
+    "no_gate": {
+      "config": "configs/ablation_configs/ablation_no_gate.json",
+      "status": "NOT_RUN — gate cannot be disabled (see config for rationale)",
+      "substitute": "Compare fixture_baseline vs sft_baseline for gate-policy contribution"
+    }
+  },
+
+  "interface_readiness": {
+    "defender_action": "READY (gate-v1 schema)",
+    "attack_payload": "PENDING Member 1",
+    "trajectory": "PENDING Member 3",
+    "evaluation_event": "PENDING Member 4"
+  },
+
+  "how_to_run_once_unblocked": {
+    "step1": "Confirm base model with team; update base_model in configs/sft_warmup.json",
+    "step2": "Run SFT: python3 scripts/prepare_sft.py --config configs/sft_warmup.json",
+    "step3": "Run checkpoint eval (in-dist): python3 scripts/evaluate_checkpoint.py --checkpoint sft-final",
+    "step4": "Run capability retention: python3 scripts/run_capability_retention_analysis.py --checkpoint sft-final",
+    "step5": "Run MAPPO self-play (requires Member 1 attacker + Member 3 critic): python3 scripts/run_review2_episode.py --n-episodes N",
+    "step6": "Run ablations: repeat steps 3-5 with ablation_no_kl.json and ablation_high_kl.json",
+    "step7_review3_only": "Run heldout OOD eval: python3 scripts/evaluate_checkpoint.py --checkpoint mappo-final --allow-heldout"
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "train_examples": 20,
+  "validation_examples": 8,
+  "train_labels": [
+    "benign_answer",
+    "benign_tool_use",
+    "injection_resistance",
+    "unsafe_request_refusal"
+  ],
+  "validation_labels": [
+    "benign_answer",
+    "benign_tool_use",
+    "injection_resistance",
+    "unsafe_request_refusal"
+  ],
+  "train_attack_families": [
+    "direct_injection",
+    "indirect_injection",
+    "secret_extraction",
+    "tool_confusion",
+    "unauthorized_operation"
+  ],
+  "train_source_types": [
+    "direct",
+    "email",
+    "incident_note",
+    "log",
+    "ticket",
+    "tool_result",
+    "webpage"
+  ],
+  "train_validation_id_overlap": 0,
+  "heldout_examples": 10,
+  "heldout_labels": [
+    "benign_answer",
+    "benign_tool_use",
+    "injection_resistance",
+    "unsafe_request_refusal"
+  ],
+  "heldout_attack_families": [
+    "direct_injection",
+    "indirect_injection",
+    "secret_extraction",
+    "tool_confusion",
+    "unauthorized_operation"
+  ],
+  "train_heldout_id_overlap": 0,
+  "validation_heldout_id_overlap": 0,
+  "train_heldout_scenario_overlap": 0,
+  "heldout_frozen": true,
+  "heldout_note": "DO NOT tune hyperparameters using this split.",
+  "generated_at": "2026-08-26T14:39:56.114482+00:00",
+  "config_path": "/Users/shivashant/Desktop/capstone/configs/sft_warmup.json",
+  "dataset_version": "sft-v2",
+  "seed": 42,
+  "base_model": "REPLACE_WITH_TEAM_APPROVED_BASE_MODEL",
+  "note": "Fixture corpus only. Actual SFT training requires team-approved base model, training stack, and compute. Mark BLOCKED_EXTERNAL until available."
+}

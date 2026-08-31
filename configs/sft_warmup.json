@@ -1,0 +1,41 @@
+{
+  "base_model": "REPLACE_WITH_TEAM_APPROVED_BASE_MODEL",
+  "method": "supervised_fine_tuning",
+  "seed": 42,
+  "max_sequence_length": 1024,
+  "learning_rate": 0.00002,
+  "num_epochs": 3,
+  "train_file": "data/sft/train.jsonl",
+  "validation_file": "data/sft/validation.jsonl",
+  "heldout_file": "data/sft/heldout.jsonl",
+  "required_labels": [
+    "benign_answer",
+    "benign_tool_use",
+    "injection_resistance",
+    "unsafe_request_refusal"
+  ],
+  "mappo_config": {
+    "clip_epsilon": 0.2,
+    "beta_kl": 0.1,
+    "value_loss_coeff": 0.5,
+    "entropy_coeff": 0.01,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "max_grad_norm": 0.5,
+    "note": "beta_kl is tuned on held-out benign tasks only. The policy gate (GATE-001 through GATE-009) is FIXED during training and must not be modified or bypassed."
+  },
+  "reward_weights": {
+    "lambda_violation": 1.0,
+    "lambda_refusal": 0.3,
+    "lambda_cost": 0.0,
+    "note": "lambda_cost reserved for Review 3 when token latency is measured."
+  },
+  "capability_retention": {
+    "probe_file": "FIXTURE_PROBES (built-in, 8 cases)",
+    "threshold": 1.0,
+    "run_after_every_checkpoint": true
+  },
+  "sft_status": "BLOCKED_EXTERNAL",
+  "sft_blocked_reason": "Requires team-approved base model, training stack (LoRA/QLoRA/full-SFT), and GPU budget. Do not run SFT until confirmed.",
+  "notes": "This config is model-agnostic. Replace base_model and connect the team's approved SFT trainer; retain the data schema and held-out split. MAPPO training follows SFT warm-up using the same seed and checkpoint."
+}

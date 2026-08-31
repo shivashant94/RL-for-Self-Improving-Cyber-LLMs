@@ -1,0 +1,25 @@
+{
+  "_ablation_id": "no_gate",
+  "_description": "Ablation: 'no-gate' condition — IMPORTANT: the Review 1 policy gate CANNOT actually be disabled. This config documents the intended comparison and why it is infeasible.",
+
+  "_WHY_THE_GATE_CANNOT_BE_DISABLED": [
+    "The policy gate (PolicyGate, GATE-001 through GATE-009) is the primary safety enforcement boundary.",
+    "Disabling it during training would allow reward signals that teach the model to execute unsafe tool calls.",
+    "This violates the project safety invariant: 'An LLM may propose a tool call but never authorises or directly executes one.'",
+    "Disabling it during evaluation would inflate ASR metrics and produce results that cannot safely be compared to gate-enabled conditions.",
+    "Therefore, a true 'no-gate' ablation is not permitted in this project."
+  ],
+
+  "_FEASIBLE_ALTERNATIVE": "Instead, run the 'no-KL' ablation (ablation_no_kl.json) and compare its ASR to the full MAPPO model. The delta shows the robustness contribution of MAPPO self-play without removing the gate. For a separate analysis of the gate's contribution alone, compare the rule-based fixture baseline (which uses the gate with a simple rule policy) to the SFT baseline (which uses the gate with a trained policy).",
+
+  "_review3_table_entry": {
+    "condition": "no_gate",
+    "status": "NOT_RUN — gate cannot be disabled (see _WHY_THE_GATE_CANNOT_BE_DISABLED)",
+    "reported_as": "N/A",
+    "substitute": "See fixture_baseline vs sft_baseline comparison for gate-policy contribution"
+  },
+
+  "gate_policy": "GATE-001 through GATE-009 are ALWAYS ACTIVE. This cannot be changed.",
+  "sft_status": "BLOCKED_EXTERNAL",
+  "notes": "This file exists to document the decision explicitly in the experiment registry and prevent any future attempt to disable the gate during training or evaluation."
+}

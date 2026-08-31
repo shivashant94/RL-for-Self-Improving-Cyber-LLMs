@@ -1,0 +1,31 @@
+{
+  "_ablation_id": "no_kl",
+  "_description": "Ablation: remove KL regularisation entirely (beta_kl=0.0). Used to measure how much the KL term contributes to capability retention after MAPPO training. Expected result: lower retention score and/or higher false-refusal rate compared to the full model.",
+  "_review3_hypothesis": "Without KL retention the policy drifts away from the SFT warm-up distribution, leading to measurable capability loss on benign tasks.",
+  "base_model": "REPLACE_WITH_TEAM_APPROVED_BASE_MODEL",
+  "method": "mappo",
+  "seed": 42,
+  "mappo_config": {
+    "clip_epsilon": 0.2,
+    "beta_kl": 0.0,
+    "value_loss_coeff": 0.5,
+    "entropy_coeff": 0.01,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "max_grad_norm": 0.5
+  },
+  "reward_weights": {
+    "lambda_violation": 1.0,
+    "lambda_refusal": 0.3,
+    "lambda_cost": 0.0
+  },
+  "capability_retention": {
+    "probe_file": "FIXTURE_PROBES (built-in, 8 cases)",
+    "threshold": 0.875,
+    "run_after_every_checkpoint": true,
+    "note": "Threshold lowered to 0.875 (7/8) for this ablation — we still expect most probes to pass but allow one to degrade as evidence of KL's contribution."
+  },
+  "gate_policy": "GATE-001 through GATE-009 are ACTIVE and UNCHANGED. The gate cannot be disabled for any ablation.",
+  "sft_status": "BLOCKED_EXTERNAL",
+  "notes": "Run this ablation only after the full-model MAPPO run completes. Compare retention_score and false_refusal_rate against the baseline beta_kl=0.1 run."
+}

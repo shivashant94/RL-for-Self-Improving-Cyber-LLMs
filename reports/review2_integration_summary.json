@@ -1,0 +1,127 @@
+{
+  "report_id": "review2_integration_summary_v1",
+  "generated_at": "2026-08-27T16:57:00Z",
+  "phase": "review2",
+  "scope": "Fixture-based integration summary. All results from deterministic rule-based baselines. Not a trained-LLM or production-security result.",
+  "disclaimer": "These results validate the Defender enforcement environment and interface contracts. SFT warm-up and MAPPO training are BLOCKED_EXTERNAL pending team base-model decision. Metrics will be updated once training runs.",
+
+  "deliverables": {
+    "review1_complete": {
+      "status": "DONE",
+      "tests_passing": 43,
+      "gate_version": "GATE-001_through_GATE-009",
+      "sft_corpus": {"train": 20, "validation": 8, "heldout": 10},
+      "eval_cases": {"review1": 14, "heldout": 10},
+      "attack_families_covered": ["direct_injection", "indirect_injection", "secret_extraction", "unauthorized_operation", "tool_confusion"],
+      "source_types_covered": ["direct", "email", "log", "ticket", "webpage", "tool_result", "incident_note"],
+      "reports": ["reports/review1_baseline_metrics.json", "reports/sft_warmup_manifest.json", "reports/review1_traces.json"]
+    },
+    "integration_contracts": {
+      "status": "DONE",
+      "modules": ["model_adapter.py", "rollout_adapter.py", "rewards.py"],
+      "interfaces_implemented": {
+        "DefenderObservation": "Frozen; task_id, user_task, untrusted_content, safe_context, allowed_action_schema. No critic/attacker hidden state.",
+        "RawModelOutput": "Pre-gate model proposal; text, optional tool_name/args/purpose, log_prob, entropy.",
+        "BaseModelAdapter": "Abstract act() contract; validated schema version; FixtureModelAdapter and SFTModelAdapter stubs.",
+        "DefenderAction": "Frozen; validated gate result, pre_gate_unsafe flag, log_prob, action_mask_version.",
+        "TrajectoryStep": "observation + action + reward_components; advantage/value_estimate reserved for Member 3.",
+        "RewardWeights": "lambda_violation=1.0, lambda_refusal=0.3, lambda_cost=0.0 (non-negative validated)."
+      },
+      "tests_passing": 104
+    },
+    "mappo_and_capability": {
+      "status": "DONE",
+      "modules": ["mappo_defender.py", "capability_retention.py"],
+      "loss_components": {
+        "policy_loss": "PPO clipped surrogate L_CLIP; clip_epsilon=0.2",
+        "kl_penalty": "Token-level KL(pi_theta || pi_SFT); beta_kl=0.1; zero when current==reference",
+        "value_loss": "MSE; value_loss_coeff=0.5",
+        "entropy_bonus": "Negative; entropy_coeff=0.01"
+      },
+      "capability_probe": {
+        "total_probes": 8,
+        "categories": ["incident_summary", "security_vocabulary", "ioc_extraction", "tool_use", "log_analysis", "policy_explanation"],
+        "baseline_retention_score": 1.0,
+        "regression_flagged": false
+      },
+      "tests_passing": 162
+    },
+    "episode_harness": {
+      "status": "DONE",
+      "modules": ["episode_harness.py"],
+      "scripts": ["scripts/run_review2_episode.py"],
+      "pipeline": "FixtureModelAdapter.act() -> RolloutAdapter.step() -> apply_reward_to_step() -> run_capability_probe()",
+      "gate_invariant": "PolicyGate runs on every non-fixture tool proposal; never bypassed",
+      "episode_stats_seed42": {
+        "n_episodes": 14,
+        "avg_total_reward": 0.2857,
+        "gate_block_count": 0,
+        "pre_gate_unsafe_count": 0,
+        "retention_score": 1.0,
+        "regression_flagged": false
+      },
+      "tests_passing": 208,
+      "reports": ["reports/review2_episode_report.json"]
+    }
+  },
+
+  "baseline_metrics": {
+    "fixture_rule_based": {
+      "attack_success_rate": 0.0,
+      "benign_task_success_rate": 1.0,
+      "false_refusal_rate": 0.0,
+      "tool_block_rate": 1.0,
+      "per_family_asr": {
+        "direct_injection": 0.0,
+        "indirect_injection": 0.0,
+        "secret_extraction": 0.0,
+        "unauthorized_operation": 0.0,
+        "tool_confusion": 0.0
+      },
+      "capability_retention_score": 1.0
+    },
+    "sft_baseline": "BLOCKED_EXTERNAL",
+    "mappo_trained": "BLOCKED_EXTERNAL"
+  },
+
+  "interface_readiness": {
+    "member1_attacker_payload": {
+      "status": "PENDING",
+      "needed_fields": ["payload_id", "text", "attack_type"],
+      "blocker": "Member 1 has not provided AttackPayload schema"
+    },
+    "member3_trajectory": {
+      "status": "PENDING",
+      "needed_fields": ["observations", "actions", "rewards", "dones", "masks", "logprobs"],
+      "blocker": "Member 3 has not provided Trajectory schema; advantage/value_estimate fields left None in TrajectoryStep"
+    },
+    "member4_evaluation": {
+      "status": "PENDING",
+      "needed_fields": ["case_id", "asr_outcome", "benign_success", "refusal", "gate_result"],
+      "blocker": "Member 4 has not provided EvaluationEvent schema for Review 3"
+    },
+    "defender_action": {
+      "status": "READY",
+      "fields_implemented": ["answer_text", "tool_call", "gate_result", "log_prob", "entropy", "action_mask_version", "pre_gate_unsafe"],
+      "schema_version": "gate-v1"
+    }
+  },
+
+  "open_blockers": [
+    "Base LLM checkpoint not confirmed by team → SFT training BLOCKED_EXTERNAL",
+    "Training stack (LoRA/QLoRA/full-SFT) not decided",
+    "GPU budget not confirmed",
+    "Member 1 AttackPayload schema not received",
+    "Member 3 Trajectory/Critic schema not received",
+    "Member 4 EvaluationEvent/OOD suite schema not received"
+  ],
+
+  "next_steps_after_blockers_resolved": [
+    "Run SFT warm-up on team-approved base model",
+    "Replace FixtureModelAdapter with SFTModelAdapter in episode harness",
+    "Run MAPPO self-play: FixtureEpisodeHarness → real AttackPayload from Member 1",
+    "Tune beta_kl on held-out benign tasks",
+    "Run capability-retention probe after each MAPPO checkpoint",
+    "Produce Review 3 evaluation with Member 4 OOD suite"
+  ]
+}
