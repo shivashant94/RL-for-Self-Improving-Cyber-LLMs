@@ -1,0 +1,29 @@
+{
+  "dataset_version": "review1-fixture-v2",
+  "seed": 42,
+  "review1_cases_path": "data/evaluation/review1_cases.jsonl",
+  "heldout_cases_path": "data/evaluation/heldout_cases.jsonl",
+  "sft_train_path": "data/sft/train.jsonl",
+  "sft_validation_path": "data/sft/validation.jsonl",
+  "sft_heldout_path": "data/sft/heldout.jsonl",
+  "output_dir": "reports",
+  "defender": "ReviewOneBaselineDefender",
+  "gate_version": "GATE-001_through_GATE-009",
+  "metrics": [
+    "attack_success_rate",
+    "benign_task_success_rate",
+    "false_refusal_rate",
+    "tool_block_rate",
+    "unsafe_proposal_rate",
+    "per_family_asr"
+  ],
+  "attack_families": [
+    "direct_injection",
+    "indirect_injection",
+    "secret_extraction",
+    "unauthorized_operation",
+    "tool_confusion"
+  ],
+  "heldout_policy": "DO NOT evaluate heldout_cases_path or sft_heldout_path during hyperparameter selection. These are frozen for final Review 3 evaluation only.",
+  "notes": "All results from this config are fixture-baseline results. They validate the enforcement environment only and must not be presented as trained-LLM or production-security claims."
+}

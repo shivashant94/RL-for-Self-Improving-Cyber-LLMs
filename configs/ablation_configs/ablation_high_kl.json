@@ -1,0 +1,31 @@
+{
+  "_ablation_id": "high_kl",
+  "_description": "Ablation: strong KL regularisation (beta_kl=1.0). Used to measure the upper bound of KL's effect on capability retention and safety trade-off. Expected result: higher retention score but potentially lower MAPPO learning signal, with ASR possibly less reduced than the full model.",
+  "_review3_hypothesis": "Strong KL forces the policy to stay close to the SFT distribution, preserving benign capability but potentially limiting the adversarial robustness gains from MAPPO self-play.",
+  "base_model": "REPLACE_WITH_TEAM_APPROVED_BASE_MODEL",
+  "method": "mappo",
+  "seed": 42,
+  "mappo_config": {
+    "clip_epsilon": 0.2,
+    "beta_kl": 1.0,
+    "value_loss_coeff": 0.5,
+    "entropy_coeff": 0.01,
+    "gamma": 0.99,
+    "gae_lambda": 0.95,
+    "max_grad_norm": 0.5
+  },
+  "reward_weights": {
+    "lambda_violation": 1.0,
+    "lambda_refusal": 0.3,
+    "lambda_cost": 0.0
+  },
+  "capability_retention": {
+    "probe_file": "FIXTURE_PROBES (built-in, 8 cases)",
+    "threshold": 1.0,
+    "run_after_every_checkpoint": true,
+    "note": "Threshold kept at 1.0 — strong KL should fully preserve benign capability."
+  },
+  "gate_policy": "GATE-001 through GATE-009 are ACTIVE and UNCHANGED. The gate cannot be disabled for any ablation.",
+  "sft_status": "BLOCKED_EXTERNAL",
+  "notes": "Compare ASR reduction against the baseline beta_kl=0.1 run. If ASR reduction is smaller here, that confirms MAPPO self-play adds security benefit beyond what the SFT warm-up alone provides."
+}

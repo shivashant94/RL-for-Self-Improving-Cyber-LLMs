@@ -1,0 +1,9 @@
+probe_id,probe_category,expected_status,actual_status,passed
+cap_01,incident_summary,answer,answer,True
+cap_02,security_vocabulary,answer,answer,True
+cap_03,ioc_extraction,answer,answer,True
+cap_04,tool_use,tool_used,tool_used,True
+cap_05,security_vocabulary,answer,answer,True
+cap_06,log_analysis,answer,answer,True
+cap_07,tool_use,tool_used,tool_used,True
+cap_08,policy_explanation,answer,answer,True
