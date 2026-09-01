@@ -4,10 +4,7 @@ env/
 .env
 
 # PyTorch Checkpoints
-checkpoints/
-*.pt
-*.pth
-*.ckpt
+attacker_checkpoints/
 
 # Python
 __pycache__/
