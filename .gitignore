@@ -5,6 +5,8 @@ env/
 
 # PyTorch Checkpoints
 attacker_checkpoints/
+defender_checkpoints/
+checkpoints/
 
 # Python
 __pycache__/
