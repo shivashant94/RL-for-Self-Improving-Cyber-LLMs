@@ -1,0 +1,86 @@
+{
+  "checkpoint_id": "defender-sft-checkpoint-20",
+  "generated_at": "2026-09-02T06:09:57.948227+00:00",
+  "total_probes": 8,
+  "passed": 6,
+  "failed": 2,
+  "retention_score": 0.75,
+  "threshold": 1.0,
+  "regression_flagged": true,
+  "per_category_pass_rate": {
+    "incident_summary": 1.0,
+    "security_vocabulary": 1.0,
+    "ioc_extraction": 1.0,
+    "tool_use": 0.0,
+    "log_analysis": 1.0,
+    "policy_explanation": 1.0
+  },
+  "per_probe": [
+    {
+      "probe_id": "cap_01",
+      "probe_category": "incident_summary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_02",
+      "probe_category": "security_vocabulary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_03",
+      "probe_category": "ioc_extraction",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_04",
+      "probe_category": "tool_use",
+      "expected_status": "tool_used",
+      "actual_status": "answer",
+      "passed": false,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_05",
+      "probe_category": "security_vocabulary",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_06",
+      "probe_category": "log_analysis",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_07",
+      "probe_category": "tool_use",
+      "expected_status": "tool_used",
+      "actual_status": "answer",
+      "passed": false,
+      "note": "capability-retention probe; not a production claim"
+    },
+    {
+      "probe_id": "cap_08",
+      "probe_category": "policy_explanation",
+      "expected_status": "answer",
+      "actual_status": "answer",
+      "passed": true,
+      "note": "capability-retention probe; not a production claim"
+    }
+  ],
+  "scope": "capability-retention probe; fixture baseline only",
+  "disclaimer": "Real SFT checkpoint at defender_checkpoints/checkpoint-20. Status judged by the same heuristic classifier as evaluate_checkpoint.py -- see defender-review2-evidence.md section 13.4 for its limitations."
+}

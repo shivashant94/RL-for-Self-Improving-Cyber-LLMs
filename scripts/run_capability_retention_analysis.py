@@ -28,6 +28,7 @@ import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
@@ -37,7 +38,10 @@ from defender_policy.capability_retention import (  # noqa: E402
     CapabilityRetentionReport,
     run_capability_probe,
 )
-from defender_policy.model_adapter import FixtureModelAdapter  # noqa: E402
+from defender_policy.evaluate_checkpoint import _AdapterShim  # noqa: E402
+from defender_policy.model_adapter import SFTModelAdapter  # noqa: E402
+from defender_policy.rewards import RewardWeights  # noqa: E402
+from defender_policy.rollout_adapter import RolloutAdapter  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
@@ -47,6 +51,17 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint", default="fixture_baseline",
         help="Checkpoint identifier (default: fixture_baseline).",
+    )
+    parser.add_argument(
+        "--checkpoint-path", default=None,
+        help=(
+            "Path to a real LoRA checkpoint directory, produced by "
+            "src/train_sft.py. If omitted, probes the fixture baseline instead."
+        ),
+    )
+    parser.add_argument(
+        "--base-model", default="Qwen/Qwen2.5-0.5B",
+        help="Base model the checkpoint was trained from (default: Qwen/Qwen2.5-0.5B).",
     )
     parser.add_argument(
         "--threshold", type=float, default=1.0,
@@ -61,7 +76,9 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _build_report(report: CapabilityRetentionReport, checkpoint_id: str) -> dict:
+def _build_report(
+    report: CapabilityRetentionReport, checkpoint_id: str, checkpoint_path: Optional[str] = None
+) -> dict:
     """Serialise a CapabilityRetentionReport to a JSON-ready dict."""
     return {
         "checkpoint_id": checkpoint_id,
@@ -86,10 +103,14 @@ def _build_report(report: CapabilityRetentionReport, checkpoint_id: str) -> dict
         ],
         "scope": report.scope,
         "disclaimer": (
-            "Fixture-based capability probing only. "
-            "Scores reflect rule-based baseline behaviour; "
-            "replace FixtureModelAdapter with SFTModelAdapter "
-            "once base model is confirmed."
+            f"Real SFT checkpoint at {checkpoint_path}. Status judged by the same "
+            "heuristic classifier as evaluate_checkpoint.py -- see "
+            "defender-review2-evidence.md section 13.4 for its limitations."
+            if checkpoint_path
+            else (
+                "Fixture-based capability probing only. Pass --checkpoint-path "
+                "to probe a real SFT checkpoint instead."
+            )
         ),
     }
 
@@ -139,14 +160,21 @@ def main() -> None:
     args = _parse_args()
     output_dir = Path(args.output_dir)
 
-    # Use FixtureModelAdapter until a real checkpoint is available.
-    # Replace with SFTModelAdapter(checkpoint_path=...) once confirmed.
-    defender = None  # run_capability_probe defaults to ReviewOneBaselineDefender
+    if args.checkpoint_path:
+        # Reuse the same shim evaluate_checkpoint.py uses, so a real
+        # checkpoint is judged identically in both scripts rather than
+        # risking a third, slightly-different classifier.
+        adapter = SFTModelAdapter(
+            checkpoint_path=args.checkpoint_path, base_model=args.base_model
+        )
+        defender = _AdapterShim(adapter, RolloutAdapter(), RewardWeights())
+    else:
+        defender = None  # run_capability_probe defaults to ReviewOneBaselineDefender
 
     report = run_capability_probe(defender=defender, threshold=args.threshold)
     _print_summary(report, args.checkpoint)
 
-    report_dict = _build_report(report, args.checkpoint)
+    report_dict = _build_report(report, args.checkpoint, args.checkpoint_path)
 
     if args.dry_run:
         print("[dry-run] Analysis complete — no files written.")

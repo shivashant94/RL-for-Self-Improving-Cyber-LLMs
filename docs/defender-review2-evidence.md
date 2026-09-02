@@ -381,11 +381,33 @@ a result to report as "the Defender's real performance." A meaningful real basel
 epochs and, per the SFT data-quality rules already documented in the master plan, more examples
 per behavior.
 
-### 13.5 Files added this session
+### 13.5 Capability retention on the real checkpoint
+
+`scripts/run_capability_retention_analysis.py` now also accepts `--checkpoint-path` /
+`--base-model`, reusing the same `_AdapterShim` classifier as `evaluate_checkpoint.py` (one
+classifier, not a third slightly-different one) — see
+`reports/capability_retention_defender-sft-checkpoint-20.json`:
+
+| Metric | Fixture baseline | Real checkpoint-20 |
+|---|---|---|
+| Retention score | 1.0 (8/8) | **0.75 (6/8)** |
+| Regression flagged (threshold 1.0) | No | **Yes** |
+| Failing category | — | `tool_use` (0.00) |
+
+Both `tool_use` probes (`cap_04`, `cap_07`) failed: the model answered in plain text instead of
+emitting `<tool_call>{...}</tool_call>` syntax. This is a real, informative finding rather than a
+classifier artifact — the training corpus has only a handful of `benign_tool_use` examples among
+its 20 rows, so the checkpoint hasn't reliably learned the tool-call format yet. The regression
+flag at the default threshold (1.0) is reported as-is, not suppressed by loosening the threshold,
+consistent with §13.3–13.4's honesty about this being a minimal training budget.
+
+### 13.6 Files added this session
 
 | File | Purpose |
 |---|---|
 | `src/defender_policy/model_adapter.py` (updated) | Real `SFTModelAdapter._generate` implementation |
-| `scripts/evaluate_checkpoint.py` (updated) | `--checkpoint-path` / `--base-model` flags |
-| `reports/checkpoint_eval_defender-sft-checkpoint-20.json` | This section's real evaluation result |
+| `scripts/evaluate_checkpoint.py` (updated) | `--checkpoint-path` / `--base-model` flags; fixed fixture-vs-fixture classifier bug |
+| `scripts/run_capability_retention_analysis.py` (updated) | `--checkpoint-path` / `--base-model` flags, reusing the same shim |
+| `reports/checkpoint_eval_defender-sft-checkpoint-20.json` | Real evaluation result (post-fix) |
+| `reports/capability_retention_defender-sft-checkpoint-20.json` / `.csv` | Real capability retention result |
 | `.gitignore` (updated) | `defender_checkpoints/`, `checkpoints/` — do not commit checkpoint binaries |
