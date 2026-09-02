@@ -29,6 +29,8 @@ tests pass without a real LLM.
 """
 
 import abc
+import json
+import re
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
@@ -163,25 +165,137 @@ class FixtureModelAdapter(BaseModelAdapter):
         )
 
 
-# ── Stub for future SFT/MAPPO model ──────────────────────────────────────────
+# ── Real SFT-trained model adapter ────────────────────────────────────────────
+
+_TOOL_CALL_RE = re.compile(r"<tool_call>(.*?)</tool_call>", re.DOTALL)
+
 
 class SFTModelAdapter(BaseModelAdapter):
-    """Placeholder adapter for the real SFT-trained Defender model.
+    """Adapter for a real LoRA-tuned Defender checkpoint, produced by
+    ``src/train_sft.py`` against ``data/sft/train_formatted.jsonl``.
 
-    Status: BLOCKED_EXTERNAL — requires team-confirmed base model, training
-    stack, and GPU budget.  This class provides the correct interface so
-    downstream code compiles and tests pass against the fixture adapter.
+    Loading (torch/transformers/peft) is deferred to first use, so importing
+    this module never requires those packages — only actually generating
+    from a checkpoint does.  Without a ``checkpoint_path``, ``act()`` still
+    raises ``NotImplementedError`` rather than silently falling back to a
+    fixture: there is no model to be honest about yet.
 
-    To activate: replace the ``NotImplementedError`` body with the real
-    model-loading and generation code.  Do NOT change the ``act()`` contract.
+    Prompt and output format mirror training exactly:
+      - prompt:  "User: {user_task}\\n[untrusted content]\\n{untrusted_content}\\nAssistant:"
+        (matches scripts/format_sft_for_training.py)
+      - a tool proposal is emitted as ``<tool_call>{"tool":...,"arguments":...,
+        "purpose":...}</tool_call>`` (matches the SFT corpus's benign_tool_use
+        targets); anything else is treated as a direct text answer.
     """
 
-    def __init__(self, checkpoint_path: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        checkpoint_path: Optional[str] = None,
+        base_model: str = "Qwen/Qwen2.5-0.5B",
+        max_new_tokens: int = 200,
+        device: Optional[str] = None,
+    ) -> None:
         self.checkpoint_path = checkpoint_path
+        self.base_model = base_model
+        self.max_new_tokens = max_new_tokens
+        self._device_override = device
+        self._model = None
+        self._tokenizer = None
+        self._torch = None
+
+    def _load(self) -> None:
+        if self._model is not None:
+            return
+        if not self.checkpoint_path:
+            raise NotImplementedError(
+                "SFTModelAdapter has no checkpoint_path.  Pass "
+                "checkpoint_path=<LoRA adapter dir produced by train_sft.py> "
+                "once a real Defender checkpoint exists.  Do not fabricate results."
+            )
+        try:
+            import torch
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from peft import PeftModel
+        except ImportError as exc:
+            raise ImportError(
+                "SFTModelAdapter needs torch, transformers, and peft installed "
+                "(see requirements.txt) to load a real checkpoint."
+            ) from exc
+
+        is_mac = not torch.cuda.is_available() and torch.backends.mps.is_available()
+        device = self._device_override or ("cpu" if is_mac else "auto")
+
+        tokenizer = AutoTokenizer.from_pretrained(self.base_model)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        base = AutoModelForCausalLM.from_pretrained(
+            self.base_model, device_map=device, torch_dtype=torch.float32,
+        )
+        model = PeftModel.from_pretrained(base, self.checkpoint_path)
+        model.eval()
+
+        self._torch = torch
+        self._tokenizer = tokenizer
+        self._model = model
+
+    @staticmethod
+    def _build_prompt(observation: DefenderObservation) -> str:
+        lines = [observation.user_task]
+        if observation.untrusted_content:
+            lines.append(f"[untrusted content]\n{observation.untrusted_content}")
+        user_turn = "\n".join(lines)
+        return f"User: {user_turn}\nAssistant:"
+
+    @staticmethod
+    def _parse_completion(
+        completion: str, log_prob: float, entropy: Optional[float]
+    ) -> RawModelOutput:
+        match = _TOOL_CALL_RE.search(completion)
+        if match:
+            try:
+                payload = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                # Malformed tool-call syntax is not our call to fix — pass the raw
+                # text through and let the policy gate's GATE-003 reject it.
+                return RawModelOutput(text=completion, log_prob=log_prob, entropy=entropy)
+            return RawModelOutput(
+                text="",
+                tool_name=payload.get("tool"),
+                tool_args=payload.get("arguments") or {},
+                tool_purpose=payload.get("purpose", ""),
+                log_prob=log_prob,
+                entropy=entropy,
+            )
+        return RawModelOutput(text=completion, log_prob=log_prob, entropy=entropy)
 
     def _generate(self, observation: DefenderObservation) -> RawModelOutput:
-        raise NotImplementedError(
-            "SFTModelAdapter._generate is BLOCKED_EXTERNAL.  "
-            "Load the team-approved checkpoint and implement generation here.  "
-            "Do not fabricate results."
-        )
+        self._load()
+        torch = self._torch
+        prompt = self._build_prompt(observation)
+        inputs = self._tokenizer(prompt, return_tensors="pt").to(self._model.device)
+
+        with torch.no_grad():
+            output = self._model.generate(
+                **inputs,
+                max_new_tokens=self.max_new_tokens,
+                do_sample=False,
+                return_dict_in_generate=True,
+                output_scores=True,
+                pad_token_id=self._tokenizer.pad_token_id,
+            )
+
+        prompt_len = inputs["input_ids"].shape[1]
+        generated_ids = output.sequences[0][prompt_len:]
+        completion = self._tokenizer.decode(generated_ids, skip_special_tokens=True).strip()
+
+        log_prob = 0.0
+        entropy_terms = []
+        for step_logits, token_id in zip(output.scores, generated_ids):
+            log_probs = torch.log_softmax(step_logits[0], dim=-1)
+            log_prob += log_probs[token_id].item()
+            probs = log_probs.exp()
+            entropy_terms.append(-(probs * log_probs).sum().item())
+        entropy = sum(entropy_terms) / len(entropy_terms) if entropy_terms else None
+
+        return self._parse_completion(completion, log_prob, entropy)

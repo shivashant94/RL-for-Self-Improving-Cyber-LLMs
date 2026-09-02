@@ -17,7 +17,7 @@ Design rules
 - Every result is tagged with dataset_version, seed, and evaluation_scope so it
   can never be silently mistaken for a trained-LLM or production-security result.
 - The module is pure (no network, no shell, no credentials).
-- Compatible with both FixtureModelAdapter and (future) SFTModelAdapter.
+- Compatible with both FixtureModelAdapter and SFTModelAdapter.
 """
 
 from __future__ import annotations
