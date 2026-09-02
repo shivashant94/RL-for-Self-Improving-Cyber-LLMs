@@ -273,13 +273,16 @@ class TestSFTModelAdapterParsing(unittest.TestCase):
         self.assertEqual(out.text, completion)
         self.assertIsNone(out.tool_name)
 
-    def test_sft_adapter_missing_deps_raise_import_error(self) -> None:
-        # With a checkpoint_path set but no torch/transformers/peft installed
-        # in this test environment, loading must fail loudly, never silently
-        # fabricate a response.
+    def test_sft_adapter_bad_checkpoint_fails_loudly(self) -> None:
+        # With a checkpoint_path set to something that can't be loaded — whether
+        # because torch/transformers/peft aren't installed, or because the path
+        # itself doesn't hold a real adapter — loading must fail loudly, never
+        # silently fabricate a response. Which exception fires depends on which
+        # failure hits first in this environment (missing deps vs. missing
+        # checkpoint files), so any of these is an acceptable "failed honestly."
         adapter = SFTModelAdapter(checkpoint_path="./nonexistent-checkpoint")
         obs = _make_obs()
-        with self.assertRaises((ImportError, ModuleNotFoundError, OSError)):
+        with self.assertRaises((ImportError, ModuleNotFoundError, OSError, ValueError)):
             adapter.act(obs)
 
 

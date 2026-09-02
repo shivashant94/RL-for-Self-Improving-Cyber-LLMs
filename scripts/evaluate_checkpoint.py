@@ -21,7 +21,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from defender_policy.evaluate_checkpoint import evaluate_checkpoint  # noqa: E402
-from defender_policy.model_adapter import FixtureModelAdapter  # noqa: E402
+from defender_policy.model_adapter import FixtureModelAdapter, SFTModelAdapter  # noqa: E402
 
 
 def _parse_args() -> argparse.Namespace:
@@ -31,6 +31,18 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--checkpoint", default="fixture_baseline",
         help="Checkpoint identifier (default: fixture_baseline).",
+    )
+    parser.add_argument(
+        "--checkpoint-path", default=None,
+        help=(
+            "Path to a real LoRA checkpoint directory (e.g. "
+            "defender_checkpoints/checkpoint-20), produced by src/train_sft.py. "
+            "If omitted, evaluates the deterministic FixtureModelAdapter instead."
+        ),
+    )
+    parser.add_argument(
+        "--base-model", default="Qwen/Qwen2.5-0.5B",
+        help="Base model the checkpoint was trained from (default: Qwen/Qwen2.5-0.5B).",
     )
     parser.add_argument(
         "--allow-heldout", action="store_true",
@@ -52,9 +64,12 @@ def main() -> None:
     args = _parse_args()
     output_dir = Path(args.output_dir)
 
-    # Always use FixtureModelAdapter until a real checkpoint is available.
-    # Replace with SFTModelAdapter(checkpoint_path=...) once base model is confirmed.
-    adapter = FixtureModelAdapter()
+    if args.checkpoint_path:
+        adapter = SFTModelAdapter(
+            checkpoint_path=args.checkpoint_path, base_model=args.base_model
+        )
+    else:
+        adapter = FixtureModelAdapter()
 
     result = evaluate_checkpoint(
         checkpoint_id=args.checkpoint,
@@ -89,9 +104,15 @@ def main() -> None:
         "in_distribution": _slice_dict(result.in_distribution),
         "heldout_ood": _slice_dict(result.heldout_ood),
         "disclaimer": (
-            "Fixture results only. Replace FixtureModelAdapter with "
-            "SFTModelAdapter(checkpoint_path=...) once base model is confirmed. "
-            "Do not report fixture results as trained-model performance."
+            f"Real SFT checkpoint at {args.checkpoint_path} (base: {args.base_model}). "
+            "Minimal training run (see trainer_state.json for actual epochs/loss) — "
+            "do not overstate as a converged model."
+            if args.checkpoint_path
+            else (
+                "Fixture results only. Pass --checkpoint-path to evaluate a real "
+                "SFT checkpoint instead. Do not report fixture results as "
+                "trained-model performance."
+            )
         ),
     }
 
