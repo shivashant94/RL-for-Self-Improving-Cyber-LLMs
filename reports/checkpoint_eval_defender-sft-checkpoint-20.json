@@ -2,7 +2,7 @@
   "checkpoint_id": "defender-sft-checkpoint-20",
   "seed": 42,
   "dataset_version": "review1-fixture-v2",
-  "generated_at": "2026-09-02T05:32:54.833698+00:00",
+  "generated_at": "2026-09-02T05:59:08.546548+00:00",
   "allow_heldout": false,
   "evaluation_scope": "checkpoint 'defender-sft-checkpoint-20' evaluation; verify training provenance before reporting",
   "in_distribution": {
